@@ -1,19 +1,17 @@
-using ProjetoAPI.Repository;
+using Microsoft.EntityFrameworkCore;
+using ProjetoAPI.Context;
+using ProjetoAPI.Model;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var stringConexao = "Data Source=produtos.db";
+builder.Services.AddSqlite<ProdutoDbContext>(stringConexao);
+
 var app = builder.Build();
 
-var repo = new ProdutoRepository();
-
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -22,13 +20,25 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
-
-app.MapGet("/listarprodutos", () =>
+// async -> assincrono
+app.MapGet("/produtos", async (ProdutoDbContext db) =>
 {
-    return repo.ListarProdutos();
+    return await db.Produtos.ToListAsync();
 });
 
-app.MapControllers();
+// TODO CADASTRO - POST
+app.MapPost("/produtos", async (Produto prod, ProdutoDbContext db) =>
+{
+    db.Produtos.Add(prod);
+    // EF - SaveChanges
+    await db.SaveChangesAsync();
+
+    return Results.Created();
+});
+
+// GET - Listagem de Produtos - "/listarprodutos"
+// POST - Cadastro de Produtos - "/cadastrarprodutos"
+
+// Deletar e Editar
 
 app.Run();
